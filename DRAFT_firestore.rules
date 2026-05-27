@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net default catch-all reject
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Global Security primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      // standard checks, fallback to simple auth match is standard
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Entity validation helpers
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.vibePoints is int && data.vibePoints >= 0 &&
+             data.completedExperiencesCount is int && data.completedExperiencesCount >= 0 &&
+             (data.tier == 'Bronze' || data.tier == 'Silver' || data.tier == 'Gold' || data.tier == 'VIP Platinum') &&
+             data.keys().hasAll(['userId', 'email', 'vibePoints', 'completedExperiencesCount', 'tier', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 7;
+    }
+
+    function isValidMusicEvent(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.type is string && (data.type == 'live' || data.type == 'dj' || data.type == 'festival' || data.type == 'underground' || data.type == 'workshop') &&
+             data.maxCapacity is int && data.maxCapacity >= 1 &&
+             data.currentCapacity is int && data.currentCapacity >= 0 &&
+             data.location is string && data.location.size() <= 256 &&
+             data.address is string && data.address.size() <= 512 &&
+             data.description is string && data.description.size() <= 2048 &&
+             data.startTime is string && data.startTime.size() <= 64 &&
+             data.endTime is string && data.endTime.size() <= 64 &&
+             (data.price is int || data.price is float) && data.price >= 0.0 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.phone is string && data.phone.size() <= 64 &&
+             data.bannerUrl is string && data.bannerUrl.size() <= 1024 &&
+             data.createdBy is string && data.createdBy.size() <= 128 &&
+             data.keys().hasAll(['id', 'name', 'type', 'maxCapacity', 'currentCapacity', 'location', 'address', 'description', 'startTime', 'endTime', 'price', 'email', 'phone', 'bannerUrl', 'createdBy', 'createdAt']) &&
+             (data.keys().size() == 15 || (data.keys().size() == 16 && data.tag is string));
+    }
+
+    function isValidRegistration(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.eventId is string && data.eventId.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.keys().hasAll(['id', 'eventId', 'userId', 'createdAt']) &&
+             data.keys().size() == 4;
+    }
+
+    // Collections matches
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId) && isValidId(userId);
+      allow create: if isSignedIn() && (request.auth.uid == userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if isSignedIn() && (request.auth.uid == userId) && isValidId(userId) && isValidUserProfile(incoming()) 
+                     && incoming().userId == existing().userId 
+                     && incoming().email == existing().email 
+                     && incoming().createdAt == existing().createdAt;
+    }
+
+    match /events/{eventId} {
+      allow get: if true && isValidId(eventId);
+      allow list: if true;
+      allow create: if isEmailVerified() && isValidId(eventId) && isValidMusicEvent(incoming()) && incoming().createdBy == request.auth.uid;
+      allow update: if isEmailVerified() && isValidId(eventId) && isValidMusicEvent(incoming()) && (
+        // Action 1: Editing event properties as owner
+        (existing().createdBy == request.auth.uid && incoming().createdBy == existing().createdBy && incoming().createdAt == existing().createdAt && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'maxCapacity', 'location', 'address', 'description', 'startTime', 'endTime', 'price', 'email', 'phone', 'bannerUrl', 'tag'])) ||
+        // Action 2: Incremental Registration capacity tracking from callers
+        (incoming().createdBy == existing().createdBy && incoming().createdAt == existing().createdAt && incoming().name == existing().name && incoming().diff(existing()).affectedKeys().hasOnly(['currentCapacity']))
+      );
+      allow delete: if isEmailVerified() && isValidId(eventId) && existing().createdBy == request.auth.uid;
+    }
+
+    match /registrations/{registrationId} {
+      allow get: if isSignedIn() && isValidId(registrationId) && (existing().userId == request.auth.uid);
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(registrationId) && incoming().userId == request.auth.uid && isValidRegistration(incoming());
+      allow delete: if isSignedIn() && isValidId(registrationId) && existing().userId == request.auth.uid;
+    }
+  }
+}

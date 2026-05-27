@@ -1,0 +1,6 @@
+{
+  "name": "VibePulse",
+  "description": "Experience the raw energy of live music. Locate and broadcast underground DJ sets and festival passes easily.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

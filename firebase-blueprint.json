@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "MusicEvent": {
+      "title": "MusicEvent",
+      "description": "Represents a live music event, concert, or festival set.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the music event document"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the music event or set"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of event, e.g., live, dj, festival, underground, workshop"
+        },
+        "maxCapacity": {
+          "type": "number",
+          "description": "Maximum number of slots/tickets available"
+        },
+        "currentCapacity": {
+          "type": "number",
+          "description": "Current number of registered/used slots"
+        },
+        "location": {
+          "type": "string",
+          "description": "General venue region or city"
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical address of the venue"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of acoustic style and vibe"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "ISO datetime string for event start"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "ISO datetime string for event end"
+        },
+        "price": {
+          "type": "number",
+          "description": "Admission fee for the event in USD"
+        },
+        "email": {
+          "type": "string",
+          "description": "Box office contact email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Box office contact phone number"
+        },
+        "bannerUrl": {
+          "type": "string",
+          "description": "Stunning URL image representation of the set"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag badge such as Selling Fast, Live Now, or Completed"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "User ID of the creator/broadcaster"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the broadcast was created"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "maxCapacity",
+        "currentCapacity",
+        "location",
+        "address",
+        "description",
+        "startTime",
+        "endTime",
+        "price",
+        "email",
+        "phone",
+        "bannerUrl",
+        "createdBy",
+        "createdAt"
+      ]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "Declares a ticket/admission lock for a specific user to an event node.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique registration identifier"
+        },
+        "eventId": {
+          "type": "string",
+          "description": "The target music event ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The registering user's ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of reservation lock"
+        }
+      },
+      "required": ["id", "eventId", "userId", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Telemetry stats and vibe rank progress of an individual network user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Consistent Firebase user authentication UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "vibePoints": {
+          "type": "number",
+          "description": "Accumulated dynamic loyalty scores"
+        },
+        "completedExperiencesCount": {
+          "type": "number",
+          "description": "Total historical events successfully checked into"
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["Bronze", "Silver", "Gold", "VIP Platinum"],
+          "description": "Loyalty tier representation based on user scores"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile bootstrap timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile last synchronization timestamp"
+        }
+      },
+      "required": [
+        "userId",
+        "email",
+        "vibePoints",
+        "completedExperiencesCount",
+        "tier",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "events": {
+      "schema": "MusicEvent",
+      "description": "Direct active platform broadcast entries for concerts/live shows"
+    },
+    "registrations": {
+      "schema": "Registration",
+      "description": "Admission logs indicating locked seats"
+    },
+    "users": {
+      "schema": "UserProfile",
+      "description": "Individual profiles keeping user statistics"
+    }
+  }
+}
